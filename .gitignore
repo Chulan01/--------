@@ -1,0 +1,17 @@
+.env
+admin_credentials.local.txt
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+node_modules/
+dist/
+coverage/
+backups/*.dump
+backend/backups/*.dump
+.angular/
+reports/
+practice_report_materials.md
+scripts/create_daily_commits.sh
+*.docx
