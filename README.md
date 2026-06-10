@@ -286,12 +286,6 @@ cd frontend
 npm run build
 ```
 
-Запуск одной командой:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\start_dev.ps1
-```
-
 Тестами проверяются:
 
 - регистрация;

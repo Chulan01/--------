@@ -1,9 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { Article, Backup, Category, LogEntry, Source, User } from '../models/api.models';
 import { ApiService } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-admin-page',
@@ -86,6 +88,7 @@ import { ApiService } from '../services/api.service';
             <button type="button" (click)="createBackup()"><lucide-icon name="database-backup" [size]="17"></lucide-icon> {{ labels.create }}</button>
             <button type="button" (click)="applyMigrations()"><lucide-icon name="rotate-ccw" [size]="17"></lucide-icon> {{ labels.migrations }}</button>
           </div>
+          @if (backupStatus()) { <p class="success admin-status">{{ backupStatus() }}</p> }
           <div class="admin-list">
             @for (backup of backups(); track backup.id) {
               <div class="admin-list-row">
@@ -150,6 +153,7 @@ export class AdminPageComponent implements OnInit {
   backups = signal<Backup[]>([]);
   articles = signal<Article[]>([]);
   status = signal('');
+  backupStatus = signal('');
   articleStatus = signal('');
   allowedCategories = [
     '\u0412\u0430\u0436\u043d\u0430\u044f',
@@ -204,25 +208,45 @@ export class AdminPageComponent implements OnInit {
   articleUrl = '';
   articleFeatured = true;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly auth: AuthService,
+    private readonly router: Router
+  ) {}
 
   ngOnInit() {
     this.reload();
   }
 
   reload() {
-    this.api.sources().subscribe((items) => this.sources.set(items));
+    this.status.set('');
+    this.api.sources().subscribe({
+      next: (items) => this.sources.set(items),
+      error: (err) => this.handleAdminLoadError(err)
+    });
     this.api.categories().subscribe((items) => {
       const filtered = items.filter((category) => this.allowedCategories.includes(category.name));
       this.categories.set(filtered);
       if (!this.allowedCategories.includes(this.articleCategory) && filtered.length > 0) {
         this.articleCategory = filtered[0].name;
       }
+    }, (err) => this.handleAdminLoadError(err));
+    this.api.users().subscribe({
+      next: (items) => this.users.set(items),
+      error: (err) => this.handleAdminLoadError(err)
     });
-    this.api.users().subscribe((items) => this.users.set(items));
-    this.api.logs().subscribe((items) => this.logs.set(items));
-    this.api.backups().subscribe((items) => this.backups.set(items));
-    this.api.articles().subscribe((items) => this.articles.set(items));
+    this.api.logs().subscribe({
+      next: (items) => this.logs.set(items),
+      error: (err) => this.handleAdminLoadError(err)
+    });
+    this.api.backups().subscribe({
+      next: (items) => this.backups.set(items),
+      error: (err) => this.handleAdminLoadError(err)
+    });
+    this.api.articles().subscribe({
+      next: (items) => this.articles.set(items),
+      error: (err) => this.handleAdminLoadError(err)
+    });
   }
 
   addArticle() {
@@ -282,14 +306,52 @@ export class AdminPageComponent implements OnInit {
   }
 
   createBackup() {
-    this.api.createBackup().subscribe(() => this.reload());
+    this.backupStatus.set('');
+    this.api.createBackup().subscribe({
+      next: () => {
+        this.backupStatus.set('Резервная копия создана.');
+        this.reload();
+      },
+      error: (err) => this.backupStatus.set(this.apiError(err, 'Не удалось создать резервную копию.'))
+    });
   }
 
   restore(filename: string) {
-    this.api.restoreBackup(filename).subscribe(() => this.reload());
+    this.backupStatus.set('');
+    this.api.restoreBackup(filename).subscribe({
+      next: () => {
+        this.backupStatus.set('Резервная копия восстановлена. Войдите заново.');
+        this.auth.clear();
+        this.router.navigateByUrl('/login');
+      },
+      error: (err) => this.backupStatus.set(this.apiError(err, 'Не удалось восстановить резервную копию.'))
+    });
   }
 
   applyMigrations() {
-    this.api.applyMigrations().subscribe((result) => this.status.set(result.message));
+    this.backupStatus.set('Применяю миграции...');
+    this.api.applyMigrations().subscribe({
+      next: (result) => {
+        const message = result.message?.trim() || 'Миграции применены.';
+        this.backupStatus.set(message);
+        this.reload();
+      },
+      error: (err) => this.backupStatus.set(this.apiError(err, 'Не удалось применить миграции.'))
+    });
+  }
+
+  private apiError(err: any, fallback: string): string {
+    const detail = err?.error?.detail;
+    if (typeof detail === 'string') return detail;
+    return fallback;
+  }
+
+  private handleAdminLoadError(err: any) {
+    if (err?.status === 401 || err?.status === 403) {
+      this.auth.clear();
+      this.router.navigateByUrl('/login');
+      return;
+    }
+    this.status.set(this.apiError(err, 'Не удалось загрузить данные админки.'));
   }
 }
