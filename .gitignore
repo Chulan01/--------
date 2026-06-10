@@ -5,6 +5,7 @@ venv/
 __pycache__/
 .pytest_cache/
 *.pyc
+*.log
 node_modules/
 dist/
 coverage/

@@ -1,5 +1,5 @@
 param(
-    [string]$DatabaseUrl = "postgresql+psycopg://news:news@127.0.0.1:5432/newsdb"
+    [string]$DatabaseUrl = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +10,26 @@ $Root = Split-Path -Parent $PSScriptRoot
 $Backend = Join-Path $Root "backend"
 $Frontend = Join-Path $Root "frontend"
 $Python = Join-Path $Backend ".venv\Scripts\python.exe"
+$EnvFile = Join-Path $Root ".env"
+
+function Get-DotEnvValue {
+    param(
+        [string]$Path,
+        [string]$Name
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+
+    $line = Get-Content $Path | Where-Object { $_ -match "^\s*$Name\s*=" } | Select-Object -First 1
+    if (-not $line) {
+        return $null
+    }
+
+    $value = ($line -replace "^\s*$Name\s*=", "").Trim()
+    return $value.Trim('"').Trim("'")
+}
 
 function Invoke-Checked {
     param(
@@ -22,6 +42,16 @@ function Invoke-Checked {
         throw $ErrorMessage
     }
 }
+
+if ([string]::IsNullOrWhiteSpace($DatabaseUrl)) {
+    $DatabaseUrl = Get-DotEnvValue -Path $EnvFile -Name "DATABASE_URL"
+}
+
+if ([string]::IsNullOrWhiteSpace($DatabaseUrl)) {
+    throw "DATABASE_URL is not set. Add it to .env or pass -DatabaseUrl."
+}
+
+Write-Host "Using database: $DatabaseUrl"
 
 if (-not (Test-Path $Python)) {
     Write-Host "Creating Python venv for backend..."

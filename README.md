@@ -221,6 +221,12 @@ CREATE DATABASE newsdb OWNER news;
 powershell -ExecutionPolicy Bypass -File .\scripts\start_dev.ps1
 ```
 
+Скрипт берет `DATABASE_URL` из файла `.env`. Если нужно временно запустить проект с другой базой, можно передать строку подключения параметром:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start_dev.ps1 -DatabaseUrl "postgresql+psycopg://chips:chips@127.0.0.1:5432/chipsdb"
+```
+
 Скрипт:
 
 - создает backend `.venv`, если его нет;
@@ -280,6 +286,12 @@ cd frontend
 npm run build
 ```
 
+Запуск одной командой:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start_dev.ps1
+```
+
 Тестами проверяются:
 
 - регистрация;
@@ -324,4 +336,3 @@ npm run build
 - отчетных файлов практики, если преподавателю нужен только проект.
 
 Для запуска преподаватель может использовать `.env.example`, `requirements.txt`, `package.json` и инструкции из этого README.
-
