@@ -382,7 +382,7 @@ textarea {
   grid-template-columns: minmax(280px, .95fr) minmax(430px, 1.45fr) minmax(300px, 1fr);
   grid-template-areas:
     "manual manual manual"
-    "sources users backups"
+    "users users backups"
     "articles articles articles"
     "logs logs logs";
   gap: 14px;
@@ -396,10 +396,6 @@ textarea {
 .admin-card h2 {
   font-size: 18px;
   line-height: 1.25;
-}
-
-.sources-card {
-  grid-area: sources;
 }
 
 .manual-card {
@@ -595,8 +591,7 @@ textarea {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "manual manual"
-      "sources backups"
-      "users users"
+      "users backups"
       "articles articles"
       "logs logs";
   }
@@ -607,7 +602,6 @@ textarea {
     grid-template-columns: 1fr;
     grid-template-areas:
       "manual"
-      "sources"
       "users"
       "backups"
       "articles"
